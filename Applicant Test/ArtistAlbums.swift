@@ -26,6 +26,7 @@ class ArtistAlbums: UIViewController, UITableViewDataSource, UITableViewDelegate
         setNavBar(selectedArtist.info["name"].stringValue)
         self.tableView.backgroundColor = UIColor.blackColor()
         self.tableView.separatorColor = UIColor.clearColor()
+        self.tableView.estimatedRowHeight = 130
         
         // Here we make the request to get artist's albums. We use artist's ID as a parameter
         Alamofire.request(Router.getAlbums(selectedArtist.info["id"].stringValue))
@@ -57,27 +58,13 @@ class ArtistAlbums: UIViewController, UITableViewDataSource, UITableViewDelegate
     // Number of rows to be displayed by the table
     // We use the number of albums plus one to show the artist info
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return (albumList.count + 1)
+        return (albumList.count)
     }
     
     // Here we configure how the table view cells are gonna be displayed
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier("cell", forIndexPath: indexPath)
-        
-        // The first cell shows artist information
-        if indexPath.row == 0 {
-            
-            let cell = tableView.dequeueReusableCellWithIdentifier("artistCell", forIndexPath: indexPath) as! MainInfoCell
-            cell.artistName.text = selectedArtist.info["name"].stringValue
-            cell.backgroundPicture.downloadImageFrom(link: selectedArtist.info["images"][0]["url"].stringValue, contentMode: .ScaleAspectFit)
-            cell.profileView.downloadImageFrom(link: selectedArtist.info["images"][0]["url"].stringValue, contentMode: .ScaleAspectFit)
-            cell.numberOfFollowers.text = selectedArtist.info["followers"]["total"].stringValue + " followers"
-            cell.popularity.text = "Popularity: " + selectedArtist.info["popularity"].stringValue
-            
-        // From the second cell on, the table view displays albums' information
-        } else {
             let cell = tableView.dequeueReusableCellWithIdentifier("cell", forIndexPath: indexPath) as! AlbumCell
-            let info = albumList[indexPath.row - 1]
+            let info = albumList[indexPath.row]
             cell.albumName.text = info["name"].stringValue
             if info["images"].count != 0 {
                 let link = info["images"][0]["url"].stringValue
@@ -93,14 +80,14 @@ class ArtistAlbums: UIViewController, UITableViewDataSource, UITableViewDelegate
                 let markets : [JSON] = Array(markets[0...4])
                 cell.markets.text = "Available in the following markets: \n"
                 for market in markets {
-                    cell.markets.text = cell.markets.text! + market.stringValue + " "
+                    cell.markets.text = cell.markets.text! + market.stringValue + "\n"
                 }
                 
             // If there are less than 5, but more than 1, display them without slicing the array
             } else if markets.count > 0 {
                 cell.markets.text = "Available in the following markets: \n"
                 for market in markets {
-                    cell.markets.text = cell.markets.text! + market.stringValue + " "
+                    cell.markets.text = cell.markets.text! + market.stringValue + "\n"
                 }
 
             }
@@ -109,14 +96,23 @@ class ArtistAlbums: UIViewController, UITableViewDataSource, UITableViewDelegate
             cell.externalURL = (link != "" ? link : nil)
             print(link)
             
-        }
+//        }
         
+        return cell
+    }
+    
+    func tableView(tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        let cell = tableView.dequeueReusableCellWithIdentifier("artistCell") as! MainInfoCell
+        cell.artistName.text = selectedArtist.info["name"].stringValue
+        cell.backgroundPicture.downloadImageFrom(link: selectedArtist.info["images"][0]["url"].stringValue, contentMode: .ScaleAspectFit)
+        cell.profileView.downloadImageFrom(link: selectedArtist.info["images"][0]["url"].stringValue, contentMode: .ScaleAspectFit)
+        cell.numberOfFollowers.text = selectedArtist.info["followers"]["total"].stringValue + " followers"
+        cell.popularity.text = "Popularity: " + selectedArtist.info["popularity"].stringValue
         return cell
     }
 
     // When the user taps a cell, the application should launch an external URL
     func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
-        if indexPath.row != 0 {
             self.tableView.deselectRowAtIndexPath(indexPath, animated: true)
             let cell = self.tableView.cellForRowAtIndexPath(indexPath) as! AlbumCell
             if let link = cell.externalURL {
@@ -125,17 +121,15 @@ class ArtistAlbums: UIViewController, UITableViewDataSource, UITableViewDelegate
             } else {
                 SVProgressHUD.showErrorWithStatus("No URL found")
             }
-            
-        }
     }
     
     // Height for row is different depending on wether it is displaying artist's or album's info.
     func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
-        if indexPath.row == 0 {
-            return 200
-        } else {
-            return 130
-        }
+        return UITableViewAutomaticDimension
+    }
+    
+    func tableView(tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return 200
     }
     
     
